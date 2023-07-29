@@ -1,7 +1,9 @@
 package com.henrique.mfinancas.api.resource;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,11 +42,13 @@ public class LancamentoResource {
 			@RequestParam(value = "descricao", required = false) String descricao,
 			@RequestParam(value = "mes", required = false) Integer mes,
 			@RequestParam(value = "ano", required = false) Integer ano,
+			@RequestParam(value = "tipo", required = false) TipoLancamento tipo,
 			@RequestParam("usuario") Long idUsuario) {
 		Lancamento lancamentoFiltro = new Lancamento();
 		lancamentoFiltro.setDescricao(descricao);
 		lancamentoFiltro.setMes(mes);
 		lancamentoFiltro.setAno(ano);
+		lancamentoFiltro.setTipo(tipo);
 
 		Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
 		if (!usuario.isPresent()) {
@@ -53,9 +57,14 @@ public class LancamentoResource {
 		} else {
 			lancamentoFiltro.setUsuario(usuario.get());
 		}
-
 		List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
-		return ResponseEntity.ok(lancamentos);
+
+		List<Lancamento> lancamentosOrdenados = lancamentos.stream()
+				.sorted(Comparator.comparing(Lancamento::getAno).reversed()
+						.thenComparing(Comparator.comparing(Lancamento::getMes).reversed()))
+	            .collect(Collectors.toList());
+		
+		return ResponseEntity.ok(lancamentosOrdenados);
 	}
 	
 	@GetMapping("{id}")
